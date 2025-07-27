@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="scroll-smooth bg-black text-orange-500">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hamburgueria Sabor da Terra</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Scrollbar personalizada */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1f2937;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #f97316; /* laranja */
+      border-radius: 4px;
+    }
+    .fade-in {
+      animation: fadeIn 0.3s ease forwards;
+    }
+    @keyframes fadeIn {
+      from {opacity: 0;}
+      to {opacity: 1;}
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Header com status -->
+  <header class="bg-orange-900 p-4 flex justify-between items-center sticky top-0 z-30">
+    <h1 class="text-2xl font-bold select-none">Hamburgueria Sabor da Terra</h1>
+    <div id="status-pedido" class="px-3 py-1 rounded font-semibold bg-green-600 text-black select-none">Aberto</div>
+  </header>
+
+  <!-- Conteúdo principal -->
+  <main class="flex-grow max-w-7xl mx-auto p-4 w-full">
+    <section id="categories" class="mb-24"></section>
+  </main>
+
+  <!-- Botão flutuante para abrir carrinho -->
+  <div id="btn-open-cart" class="fixed bottom-6 right-6 bg-orange-600 hover:bg-orange-700 rounded-full w-14 h-14 flex items-center justify-center cursor-pointer shadow-lg z-40" title="Abrir carrinho">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4" />
+      <circle cx="7" cy="21" r="2" />
+      <circle cx="17" cy="21" r="2" />
+    </svg>
+  </div>
+
+  <!-- Carrinho -->
+  <aside id="cart" class="fixed bottom-0 right-0 w-80 bg-black h-96 p-4 shadow-lg hidden z-50 flex flex-col rounded-tl-lg rounded-bl-lg text-white border-l-4 border-orange-600">
+    <div class="flex justify-between items-center mb-4 border-b border-orange-600 pb-2">
+      <h2 class="text-xl font-bold select-none">Carrinho</h2>
+      <button id="btn-close-cart" class="text-red-500 hover:text-red-700 text-2xl font-bold select-none" title="Fechar">&times;</button>
+    </div>
+    <div id="cart-items" class="flex-grow overflow-y-auto space-y-3"></div>
+    <div class="mt-4 font-bold text-lg text-orange-400 border-t border-orange-600 pt-3 select-none">Total: <span id="cart-total">R$ 0,00</span></div>
+    <button id="btn-order" class="mt-4 bg-orange-600 hover:bg-orange-700 py-2 rounded font-semibold text-black disabled:opacity-50 disabled:cursor-not-allowed" disabled>Finalizar Pedido</button>
+  </aside>
+
+  <!-- Modal: Escolher forma de entrega -->
+  <div id="modal-entrega" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+    <form id="form-entrega" class="bg-orange-900 p-6 rounded-lg w-80 space-y-4 text-black">
+      <h3 class="text-2xl font-bold mb-4">Como deseja receber seu pedido?</h3>
+
+      <label class="flex items-center space-x-2 cursor-pointer">
+        <input type="radio" name="entrega" value="Retirar no estabelecimento" checked class="accent-orange-600" />
+        <span>Retirar no estabelecimento</span>
+      </label>
+
+      <label class="flex items-center space-x-2 cursor-pointer">
+        <input type="radio" name="entrega" value="Delivery" class="accent-orange-600" />
+        <span>Delivery</span>
+      </label>
+      <div id="campos-endereco" class="hidden space-y-2">
+        <input id="bairro" type="text" placeholder="Bairro" class="w-full p-2 rounded border border-orange-700 bg-orange-100" />
+        <input id="rua" type="text" placeholder="Rua" class="w-full p-2 rounded border border-orange-700 bg-orange-100" />
+        <input id="numero-casa" type="text" placeholder="Número da casa" class="w-full p-2 rounded border border-orange-700 bg-orange-100" />
+        <input id="complemento" type="text" placeholder="Complemento (opcional)" class="w-full p-2 rounded border border-orange-700 bg-orange-100" />
+      </div>
+
+      <div class="flex justify-between space-x-2">
+        <button type="button" id="btn-voltar-entrega" class="bg-red-600 hover:bg-red-700 py-2 px-4 rounded flex-grow text-black font-semibold">Voltar</button>
+        <button type="submit" class="bg-green-600 hover:bg-green-700 py-2 px-4 rounded flex-grow text-black font-bold">Avançar</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Modal: Pagamento -->
+  <div id="modal-pagamento" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+    <form id="form-pagamento" class="bg-orange-900 p-6 rounded-lg w-80 space-y-4 text-black">
+      <h3 class="text-2xl font-bold mb-4">Escolha a forma de pagamento</h3>
+
+      <label class="flex items-center space-x-2 cursor-pointer">
+        <input type="radio" name="pagamento" value="Dinheiro" class="accent-orange-600" />
+        <span>Dinheiro</span>
+      </label>
+
+      <div id="troco-div" class="hidden mt-2">
+        <input id="troco-para" type="text" placeholder="Valor para troco (ex: 50,00)" class="w-full p-2 rounded border border-orange-700 bg-orange-100" />
+        <p id="msg-troco" class="text-green-600 mt-1 hidden"></p>
+      </div>
+
+      <label class="flex items-center space-x-2 cursor-pointer mt-4">
+        <input type="radio" name="pagamento" value="Cartão" class="accent-orange-600" />
+        <span>Cartão (Débito ou Crédito)</span>
+      </label>
+
+      <label class="flex items-center space-x-2 cursor-pointer mt-4">
+        <input type="radio" name="pagamento" value="Pix" class="accent-orange-600" />
+        <span>Pix</span>
+      </label>
+
+      <div id="pix-info-div" class="hidden mt-2 space-y-2">
+        <p class="bg-orange-700 p-3 rounded text-black font-bold">Chave Pix: <strong>12345-67890</strong></p>
+        <input type="file" id="comprovante-pix" accept="image/*" class="w-full text-sm bg-orange-100 text-black p-1 rounded border border-orange-700" />
+        <button type="button" id="btn-enviar-comprovante" class="bg-orange-600 hover:bg-orange-700 py-2 px-4 rounded w-full font-semibold text-black">Enviar Comprovante</button>
+        <p id="msg-envio-comprovante" class="text-green-600 hidden">Comprovante enviado com sucesso!</p>
+      </div>
+
+      <div class="flex justify-between space-x-2">
+        <button type="button" id="btn-voltar-pagamento" class="bg-red-600 hover:bg-red-700 py-2 px-4 rounded flex-grow text-black font-semibold">Voltar</button>
+        <button type="submit" class="bg-green-600 hover:bg-green-700 py-2 px-4 rounded flex-grow text-black font-bold">Finalizar Pedido</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const categories = [
+      {
+        id: 1,
+        name: 'Hambúrgueres Industriais',
+        products: [
+          { id: 1, name: 'Classico', price: 8.00, description: 'Carne, alface, tomate, queijo, presunto, molho especial.', stock: 10 },
+          { id: 2, name: 'Egg Burquer', price: 10.00, description: 'Carne, ovo, alface, tomate, queijo, presunto, molho especial.', stock: 10 },
+          { id: 3, name: 'Bacon Burquer', price: 14.00, description: 'Carne, bacon, queijo, presunto, alface, tomate, cebolas caramelizadas, molho especial.', stock: 10 },
+          { id: 4, name: 'Duplo Cheese', price: 16.00, description: 'Carne X2, queijo X2, presunto, alface, tomate, cebola caramelizada, molho especial.', stock: 10 },
+          { id: 5, name: 'X-Tudo', price: 18.00, description: 'Carne, ovo, bacon, queijo, presunto, alface, tomate, cebola caramelizada, molho especial.', stock: 10 },
+        ],
+      },
+      {
+        id: 2,
+        name: 'Hambúrgueres Artesanais',
+        products: [
+          { id: 6, name: 'Classic Grill', price: 15.00, description: 'Carne bovino 125g, alface, tomate, molho barbecue, queijo.', stock: 10 },
+          { id: 7, name: 'X-Salada Gormt.', price: 16.00, description: 'Carne bovino 125g, alface, tomate, queijo, cebola roxa, milho verde, molho especial.', stock: 10 },
+          { id: 8, name: 'X-Bacon Art.', price: 18.00, description: 'Carne bovino 125g, bacon, alface, molho barbecue, tomate, queijo, presunto, cebolas caramelizadas.', stock: 10 },
+        ],
+      },
+      {
+        id: 3,
+        name: 'Adicionais',
+        products: [
+          { id: 9, name: 'Carne (Hambúrguer)', price: 2.00, stock: 20 },
+          { id: 10, name: 'Bacon', price: 3.00, stock: 20 },
+          { id: 11, name: 'Catupiry', price: 4.00, stock: 20 },
+          { id: 12, name: 'Ovo', price: 2.00, stock: 20 },
+          { id: 13, name: 'Cebola caramelizada', price: 1.00, stock: 20 },
+          { id: 14, name: 'Milho verde', price: 1.20, stock: 20 },
+          { id: 15, name: 'Calabresa', price: 4.00, stock: 20 },
+          { id: 16, name: 'Presunto', price: 1.00, stock: 20 },
+          { id: 17, name: 'Queijo', price: 1.00, stock: 20 },
+          { id: 18, name: 'Batata palha', price: 2.00, stock: 20 },
+        ],
+      },
+      {
+        id: 4,
+        name: 'Acompanhamentos',
+        products: [
+          { id: 19, name: 'Batata frita Pq.', price: 9.00, stock: 15 },
+          { id: 20, name: 'Batata frita Grd.', price: 11.00, stock: 15 },
+          { id: 21, name: 'Batata com queijo', price: 13.00, stock: 15 },
+          { id: 22, name: 'Batata + bolinhos de carne', price: 15.00, stock: 15 },
+        ],
+      },
+      {
+        id: 5,
+        name: 'Bebidas e Vitaminas',
+        products: [
+          { id: 23, name: 'Refr. Pitulinha', price: 2.50, stock: 25 },
+          { id: 24, name: 'Banana com leite', price: 7.00, stock: 10 },
+          { id: 25, name: 'Goiabada com leite', price: 7.00, stock: 10 },
+        ],
+      },
+    ];
+
+    const horarioAbertura = 18;
+    const horarioFechamento = 23;
+    const phone = '558999123153';
+
+    let cart = [];
+    let categoriaSelecionada = categories[0].id;
+
+    // DOM Elements
+    const categoriesEl = document.getElementById('categories');
+    const cartEl = document.getElementById('cart');
+    const cartItemsEl = document.getElementById('cart-items');
+    const cartTotalEl = document.getElementById('cart-total');
+    const btnOpenCart = document.getElementById('btn-open-cart');
+    const btnCloseCart = document.getElementById('btn-close-cart');
+    const btnOrder = document.getElementById('btn-order');
+    const modalEntrega = document.getElementById('modal-entrega');
+    const formEntrega = document.getElementById('form-entrega');
+    const camposEndereco = document.getElementById('campos-endereco');
+    const bairroInput = document.getElementById('bairro');
+    const ruaInput = document.getElementById('rua');
+    const numeroCasaInput = document.getElementById('numero-casa');
+    const complementoInput = document.getElementById('complemento');
+    const statusPedidoEl = document.getElementById('status-pedido');
+    const modalPagamento = document.getElementById('modal-pagamento');
+    const formPagamento = document.getElementById('form-pagamento');
+    const trocoDiv = document.getElementById('troco-div');
+    const trocoParaInput = document.getElementById('troco-para');
+    const msgTroco = document.getElementById('msg-troco');
+    const pixInfoDiv = document.getElementById('pix-info-div');
+    const comprovantePixInput = document.getElementById('comprovante-pix');
+    const btnEnviarComprovante = document.getElementById('btn-enviar-comprovante');
+    const msgEnvioComprovante = document.getElementById('msg-envio-comprovante');
+
+    // Formatar preço em R$
+    function formatarPreco(valor) {
+      return 'R$ ' + valor.toFixed(2).replace('.', ',');
+    }
+
+    // Está aberto?
+    function estaAberto() {
+      const hora = new Date().getHours();
+      return hora >= horarioAbertura && hora < horarioFechamento;
+    }
+
+    // Atualiza status aberto/fechado e cor
+    function atualizarStatusPedido() {
+      const aberto = estaAberto();
+      statusPedidoEl.textContent = aberto ? 'Aberto' : 'Fechado';
+      statusPedidoEl.classList.toggle('bg-green-600', aberto);
+      statusPedidoEl.classList.toggle('bg-red-600', !aberto);
+      statusPedidoEl.classList.toggle('text-black', true);
+      btnOrder.disabled = !aberto || cart.length === 0;
+    }
+
+    // Renderiza as tabs de categoria no menu horizontal
+    function renderizarTabs() {
+      categoriesEl.innerHTML = '';
+      const tabs = document.createElement('div');
+      tabs.className = 'flex gap-4 overflow-x-auto pb-3 border-b border-orange-600 max-w-4xl mx-auto';
+
+      categories.forEach(cat => {
+        const tab = document.createElement('button');
+        tab.textContent = cat.name;
+        tab.className = `whitespace-nowrap px-4 py-2 rounded font-semibold text-lg transition-colors ${
+          cat.id === categoriaSelecionada
+            ? 'bg-orange-600 text-black shadow-lg'
+            : 'bg-orange-900 hover:bg-orange-700 text-orange-300'
+        }`;
+        tab.addEventListener('click', () => {
+          categoriaSelecionada = cat.id;
+          renderizarTabs();
+          renderizarProdutos();
+        });
+        tabs.appendChild(tab);
+      });
+
+      categoriesEl.appendChild(tabs);
+    }
+
+    // Renderiza os produtos da categoria selecionada
+    function renderizarProdutos() {
+      // limpa e cria container dos produtos
+      const produtosContainer = document.createElement('div');
+      produtosContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl mx-auto mt-6';
+
+      const categoria = categories.find(c => c.id === categoriaSelecionada);
+
+      categoria.products.forEach(prod => {
+        const card = document.createElement('div');
+        card.className = 'bg-orange-900 p-5 rounded-lg shadow-md cursor-pointer hover:bg-orange-800 transition flex flex-col';
+
+        const nome = document.createElement('h3');
+        nome.textContent = prod.name;
+        nome.className = 'text-lg font-bold mb-3 text-orange-100';
+
+        const desc = document.createElement('p');
+        desc.textContent = prod.description || '';
+        desc.className = 'text-sm mb-4 text-orange-300 flex-grow';
+
+        const preco = document.createElement('div');
+        preco.textContent = formatarPreco(prod.price);
+        preco.className = 'font-bold text-orange-400 mb-4';
+
+        const btnAdd = document.createElement('button');
+        btnAdd.textContent = 'Adicionar ao carrinho';
+        btnAdd.className = 'bg-orange-600 hover:bg-orange-700 text-black font-semibold py-2 rounded shadow';
+        btnAdd.addEventListener('click', () => adicionarAoCarrinho(prod));
+
+        card.appendChild(nome);
+        card.appendChild(desc);
+        card.appendChild(preco);
+        card.appendChild(btnAdd);
+
+        produtosContainer.appendChild(card);
+      });
+
+      // Remove os filhos anteriores que não são as tabs
+      while (categoriesEl.children.length > 1) {
+        categoriesEl.removeChild(categoriesEl.lastChild);
+      }
+      categoriesEl.appendChild(produtosContainer);
+    }
+
+    // Adiciona produto ao carrinho
+    function adicionarAoCarrinho(produto) {
+      const itemExistente = cart.find(item => item.id === produto.id);
+      if (itemExistente) {
+        if (itemExistente.quantity < produto.stock) {
+          itemExistente.quantity++;
+        } else {
+          alert('Quantidade máxima atingida para este produto');
+        }
+      } else {
+        cart.push({ ...produto, quantity: 1 });
+      }
+      atualizarCarrinho();
+      atualizarStatusPedido();
+    }
+
+    // Remove item do carrinho
+    function removerDoCarrinho(id) {
+      cart = cart.filter(item => item.id !== id);
+      atualizarCarrinho();
+      atualizarStatusPedido();
+    }
+
+    // Atualiza visual do carrinho com fundo preto e texto branco
+    function atualizarCarrinho() {
+      cartItemsEl.innerHTML = '';
+
+      if (cart.length === 0) {
+        cartItemsEl.innerHTML = '<p class="text-center text-orange-400 select-none">Carrinho vazio.</p>';
+        btnOrder.disabled = true;
+        cartTotalEl.textContent = formatarPreco(0);
+        return;
+      }
+
+      cart.forEach(item => {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'flex justify-between items-center border-b border-orange-700 pb-2';
+
+        const nomeQtd = document.createElement('div');
+        nomeQtd.textContent = `${item.name} (x${item.quantity})`;
+        nomeQtd.className = 'font-semibold text-white select-none';
+
+        const preco = document.createElement('div');
+        preco.textContent = formatarPreco(item.price * item.quantity);
+        preco.className = 'font-semibold text-orange-400 select-none';
+
+        const btnRemover = document.createElement('button');
+        btnRemover.textContent = '×';
+        btnRemover.title = 'Remover';
+        btnRemover.className = 'text-red-600 font-bold ml-3 hover:text-red-800 select-none';
+        btnRemover.addEventListener('click', () => removerDoCarrinho(item.id));
+
+        itemEl.appendChild(nomeQtd);
+        itemEl.appendChild(preco);
+        itemEl.appendChild(btnRemover);
+
+        cartItemsEl.appendChild(itemEl);
+      });
+
+      const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+      cartTotalEl.textContent = formatarPreco(total);
+
+      btnOrder.disabled = !estaAberto() || cart.length === 0;
+    }
+
+    // Abrir e fechar carrinho
+    btnOpenCart.addEventListener('click', () => {
+      cartEl.classList.remove('hidden');
+      btnOpenCart.classList.add('hidden');
+    });
+
+    btnCloseCart.addEventListener('click', () => {
+      cartEl.classList.add('hidden');
+      btnOpenCart.classList.remove('hidden');
+    });
+
+    // Finalizar pedido - abrir modal entrega
+    btnOrder.addEventListener('click', () => {
+      if (cart.length === 0) {
+        alert('O carrinho está vazio');
+        return;
+      }
+      modalEntrega.classList.remove('hidden');
+    });
+
+    // Controle do modal entrega - mostrar campos conforme opção selecionada
+    formEntrega.entrega.forEach(radio => {
+      radio.addEventListener('change', () => {
+        const valor = formEntrega.entrega.value;
+        if (valor === 'Delivery') {
+          camposEndereco.classList.remove('hidden');
+          campoMesa.classList.add('hidden');
+        } else if (valor === 'Mesa') {
+          campoMesa.classList.remove('hidden');
+          camposEndereco.classList.add('hidden');
+        } else {
+          campoMesa.classList.add('hidden');
+          camposEndereco.classList.add('hidden');
+        }
+      });
+    });
+
+    // Botão voltar modal entrega
+    document.getElementById('btn-voltar-entrega').addEventListener('click', () => {
+      modalEntrega.classList.add('hidden');
+    });
+
+    // Enviar formulário entrega - abrir modal pagamento
+    formEntrega.addEventListener('submit', e => {
+      e.preventDefault();
+      modalEntrega.classList.add('hidden');
+      modalPagamento.classList.remove('hidden');
+    });
+
+    // Controle modal pagamento - mostrar troco e pix conforme escolha
+    formPagamento.pagamento.forEach(radio => {
+      radio.addEventListener('change', () => {
+        const val = formPagamento.pagamento.value;
+        if (val === 'Dinheiro') {
+          trocoDiv.classList.remove('hidden');
+          pixInfoDiv.classList.add('hidden');
+        } else if (val === 'Pix') {
+          trocoDiv.classList.add('hidden');
+          pixInfoDiv.classList.remove('hidden');
+        } else {
+          trocoDiv.classList.add('hidden');
+          pixInfoDiv.classList.add('hidden');
+        }
+      });
+    });
+
+    // Botão voltar modal pagamento
+    document.getElementById('btn-voltar-pagamento').addEventListener('click', () => {
+      modalPagamento.classList.add('hidden');
+      modalEntrega.classList.remove('hidden');
+    });
+
+    // Finalizar pedido
+    formPagamento.addEventListener('submit', e => {
+      e.preventDefault();
+
+      // Verifica se carrinho vazio (proteção)
+      if (cart.length === 0) {
+        alert('Carrinho vazio!');
+        modalPagamento.classList.add('hidden');
+        return;
+      }
+
+      // Dados do pedido
+      const formaEntrega = formEntrega.entrega.value;
+      let infoEntrega = '';
+      if (formaEntrega === 'Delivery') {
+        infoEntrega = `\nEndereço:\nBairro: ${bairroInput.value}\nRua: ${ruaInput.value}\nNúmero: ${numeroCasaInput.value}`;
+        if (complementoInput.value.trim() !== '') {
+          infoEntrega += `\nComplemento: ${complementoInput.value}`;
+        }
+      } else if (formaEntrega === 'Mesa') {
+        infoEntrega = `\nEstou no local, mesa: ${numeroMesaInput.value}`;
+      } else {
+        infoEntrega = '\nRetirar no estabelecimento.';
+      }
+
+      const formaPagamento = formPagamento.pagamento.value;
+      let infoPagamento = `\nForma de pagamento: ${formaPagamento}`;
+
+      if (formaPagamento === 'Dinheiro' && trocoParaInput.value.trim() !== '') {
+        infoPagamento += `\nTroco para: R$ ${trocoParaInput.value}`;
+      }
+
+      // Monta mensagem
+      let mensagem = 'Olá! Gostaria de fazer o pedido:\n\n';
+      cart.forEach(item => {
+        mensagem += `- ${item.name} (x${item.quantity}) - ${formatarPreco(item.price * item.quantity)}\n`;
+      });
+      const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+      mensagem += `\nTotal: ${formatarPreco(total)}`;
+      mensagem += infoEntrega;
+      mensagem += infoPagamento;
+
+      // Se pix, pode anexar informação (por simplicidade aqui só mostra mensagem)
+      if (formaPagamento === 'Pix') {
+        mensagem += '\n\nO cliente efetuou pagamento via Pix.';
+      }
+
+      // Envia para WhatsApp
+      const urlWhats = `https://wa.me/${phone}?text=${encodeURIComponent(mensagem)}`;
+      window.open(urlWhats, '_blank');
+
+      // Resetar tudo
+      cart = [];
+      atualizarCarrinho();
+      atualizarStatusPedido();
+      modalPagamento.classList.add('hidden');
+    });
+
+    // Inicializa interface
+    function init() {
+      renderizarTabs();
+      renderizarProdutos();
+      atualizarCarrinho();
+      atualizarStatusPedido();
+      setInterval(atualizarStatusPedido, 60000);
+    }
+
+    init();
+  </script>
+</body>
+</html>
